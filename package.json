@@ -1,0 +1,15 @@
+{
+  "name": "modupdater",
+  "version": "0.0.1",
+  "description": "auto mod updater for sussy smp",
+  "main": "modupdater.js",
+  "author": "let_game",
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "adm-zip": "^0.5.10",
+    "axios": "^1.4.0",
+    "enquirer": "^2.3.6",
+    "fs": "^0.0.1-security"
+  }
+}
