@@ -16,5 +16,6 @@ fi
 
 node modupdater.js
 
+echo ""
 echo "Program finished, press ENTER to exit..."
 read -p ""

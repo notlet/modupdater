@@ -18,4 +18,5 @@ if %errorlevel% neq 0 (
 
 node modupdater.js
 
+echo
 pause
