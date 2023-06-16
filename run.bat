@@ -5,6 +5,7 @@ where node > nul 2>&1
 if %errorlevel% neq 0 (
     echo Node.js is not installed on this system.
     echo Please install Node.js and try again.
+    pause
     exit /b 1
 )
 
@@ -13,6 +14,7 @@ node -v > nul 2>&1
 if %errorlevel% neq 0 (
     echo Node.js is installed but not running.
     echo Please start Node.js and try again.
+    pause
     exit /b 1
 )
 

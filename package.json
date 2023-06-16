@@ -1,6 +1,6 @@
 {
   "name": "modupdater",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "auto mod updater for sussy smp",
   "main": "modupdater.js",
   "author": "let_game",
@@ -12,6 +12,8 @@
     "chalk": "4",
     "enquirer": "^2.3.6",
     "fs": "^0.0.1-security",
+    "http": "^0.0.1-security",
+    "log-symbols": "^5.1.0",
     "ora": "^6.3.1"
   }
 }

@@ -4,18 +4,21 @@ const axios = require('axios');
 const enquirer = require('enquirer');
 const AdmZip = require('adm-zip');
 const chalk = require('chalk');
+const http = require('http')
 
 const serverurl = "http://letgame.pp.ua:6969";
 
+const dlclient = axios.create({ httpAgent: new http.Agent({ keepAlive: true }) });
 async function downloadFile(url, destinationPath, spinner) {
     const writer = fssync.createWriteStream(destinationPath);
-    const response = await axios({ 
+    const response = await dlclient({ 
         url, 
         method: 'GET', 
         responseType: 'stream', 
         onDownloadProgress: (progressEvent) => {
             const { loaded, total } = progressEvent;
             const percentCompleted = Math.round((loaded * 100) / total);
+            if (process?.argv.includes('--debug')) console.log(progressEvent)
             if (spinner) spinner.text = `${percentCompleted}% downloaded.`;
         },
     });
@@ -30,12 +33,13 @@ async function downloadFile(url, destinationPath, spinner) {
 
 (async () => {
     const ora = (await import('ora')).default; //importing esm modules in a commonjs file is annoying
+    const s = (await import('log-symbols')).default;
 
     //verify that we are in proper directory by checking some files
     const checks = [
         fssync.existsSync('../options.txt'),
-        fssync.existsSync('../usercache.json'),
-        fssync.existsSync('../servers.dat')
+        fssync.existsSync('../saves'),
+        fssync.existsSync('../resourcepacks')
     ];
     //fail the program if any of the checks fail
     if (checks.includes(false)) throw new Error(`Directory checks failed! You might have to launch minecraft at least once before running this, or you have unzipped this into the wrong folder.`);
@@ -43,12 +47,18 @@ async function downloadFile(url, destinationPath, spinner) {
     //check for mods folder and create if doesnt exist
     if (!fssync.existsSync('../mods')) await fs.mkdir('../mods');
 
-    //get mod lists
-    const moddir = (await fs.readdir('../mods')).filter(f => f.endsWith('.jar'));
-    const modlist = (await axios.get(`${serverurl}/list`)).data.files;
-
-    //ask for user input
     console.log(`                                                                                                                              \n    mmm   m   m   mmm    mmm   m   m          mmm   mmmmm  mmmm  \n   #   "  #   #  #   "  #   "  "m m"         #   "  # # #  #" "# \n    """m  #   #   """m   """m   #m#           """m  # # #  #   # \n   "mmm"  "mm"#  "mmm"  "mmm"   "#           "mmm"  # # #  ##m#" \n                                m"                         #     \n                               ""                          "     `)
+    
+    //get mod lists
+    const modlistspinner = ora('Fetching mod lists...').start();
+    const moddir = (await fs.readdir('../mods')).filter(f => f.endsWith('.jar'));
+    const modlisttimeout = setTimeout(() => modlistspinner.text = 'Fetching mod lists... (this is taking a bit long, is the server down?)', 10000);
+    const modlist = (await axios.get(`${serverurl}/list`)).data.files;
+    clearTimeout(modlisttimeout);
+    modlistspinner.succeed('Mod list fetched.');
+    console.log('');
+    
+    //ask for user input
     const action = await new enquirer.Select({
         name: 'action',
         message: 'What would you like to do?',
@@ -60,12 +70,12 @@ async function downloadFile(url, destinationPath, spinner) {
     const unneededmods = moddir.map(m => !modlist.includes(m) ? m : null).filter(m => m != null);
 
     const listMods = () => {
-        console.log(`\nMissing mods: ${missingmods.length > 0 ? `\n- ${missingmods.map(m => chalk.italic(m)).join('\n- ')}` : '<none>'}`);
-        console.log(`\nUnneeded mods: ${unneededmods.length > 0 ? `\n- ${unneededmods.map(m => chalk.italic(m)).join('\n- ')}` : '<none>'}`);
+        console.log(`\nMissing mods: ${missingmods.length > 0 ? `\n- ${missingmods.map(m => chalk.italic(m)).join('\n- ')}` : chalk.greenBright('<none>')}`);
+        console.log(`\nUnneeded mods: ${unneededmods.length > 0 ? `\n- ${unneededmods.map(m => chalk.italic(m)).join('\n- ')}` : chalk.greenBright('<none>')}`);
     }
 
     const updateMods = () => new Promise(async (resolve) => {
-        console.log(chalk.bold('\nUpdating mods...\n'));
+        console.log(chalk.bold('\nUpdating mods...'));
 
         //removing old mods.zip if exists
         if (fssync.existsSync('mods.zip')) await fs.unlink('mods.zip');
@@ -73,6 +83,7 @@ async function downloadFile(url, destinationPath, spinner) {
         listMods();
 
         //ask for user input to handle unneeded mods
+        if (unneededmods.length > 0) console.log('');
         const deletemodsquestion = unneededmods.length > 0 ? await new enquirer.Confirm({ name: 'deletemods', message: `Delete unneeded mods? (${unneededmods.length} found)` }).run() : false;
         if (deletemodsquestion) {
             const modstokeep = unneededmods.length > 0 ? await new enquirer.MultiSelect({
@@ -89,13 +100,13 @@ async function downloadFile(url, destinationPath, spinner) {
                     delmodsspinner.text = `Deleting ${chalk.italic(mod)}`;
                     await fs.unlink('../mods/' + mod);
                 }
-                delmodsspinner.succeed('Successfully deleted unneeded mods .');
+                delmodsspinner.succeed('Successfully deleted unneeded mods.');
             }
         }
 
         //download missing mods if needed
         if (missingmods.length > 0) {
-            console.log(''); //newline separator
+            console.log('');
             const modsdlspinner = ora('Starting mods download...').start();
             
             await downloadFile(`${serverurl}/dl/mods`, 'mods.zip', modsdlspinner);
@@ -113,10 +124,10 @@ async function downloadFile(url, destinationPath, spinner) {
                 zip.extractEntryTo(modfile, '../mods/');
             }
             modsunzipspinner.succeed('Mods extracted successfully.');
-        } else console.log(`\n${chalk.green("✔")} No missing mods, skipping download.`);
+        } else console.log(`\n${s.success} No missing mods, skipping download.`);
 
         //finish updater
-        console.log(`\n${chalk.green("✔")} All mods are up to date.`);
+        console.log(`\n${s.success} All mods are up to date.`);
         resolve();
     });
 
@@ -163,6 +174,7 @@ async function downloadFile(url, destinationPath, spinner) {
     }
 
 })().catch(e => {
-    console.log(`\n${chalk.bold('An error occured or a prompt was cancelled.')}${e ? `\n${chalk.red(e)}` : ""}`); 
+    if (process.argv.includes('--debug')) console.error(e)
+    else console.log(`\n${chalk.bold('An error occured or a prompt was cancelled.')}${e ? `\n${chalk.red(e)}` : ""}`); 
     process.exit(1);
 });
