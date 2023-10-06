@@ -1,4 +1,7 @@
 node_modules
+node
 *.zip
 yarn.lock
 package-lock.json
+blacklist.json
+temp

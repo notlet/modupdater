@@ -1,24 +1,35 @@
 @echo off
 
-REM Check if Node.js is installed
-where node > nul 2>&1
-if %errorlevel% neq 0 (
-    echo Node.js is not installed on this system.
-    echo Please install Node.js and try again.
+where node >nul 2>nul
+if errorlevel 1 (
+    echo No NodeJS found in the system's PATH! Please download it from https://nodejs.org/en/download and run this script again.
     pause
     exit /b 1
 )
 
-REM Check if Node.js is running
-node -v > nul 2>&1
-if %errorlevel% neq 0 (
-    echo Node.js is installed but not running.
-    echo Please start Node.js and try again.
+where npm >nul 2>nul
+if errorlevel 1 (
+    echo No NPM found in the system's PATH! Please download it from https://nodejs.org/en/download and run this script again.
     pause
     exit /b 1
 )
 
+for /f %%i in ('node --version 2^>^&1') do set node_version=%%i
+
+echo Running NodeJS %node_version% on %OS% %PROCESSOR_ARCHITECTURE%
+
+if not exist node_modules\ (
+    echo Looks like it's your first time running this! We are going to install the required modules now.
+    echo Please restart the script after the modules are installed.
+    npm install
+)
+
+:loop
 node modupdater.js
 
-echo
-pause
+choice /c RQ /n /m "Program finished, press Q to quit or R to rerun. "
+if errorlevel 2 (
+    echo bye!
+) else (
+    goto loop
+)
