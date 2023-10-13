@@ -21,12 +21,15 @@ echo Running NodeJS %node_version% on %OS% %PROCESSOR_ARCHITECTURE%
 if not exist node_modules\ (
     echo Looks like it's your first time running this! We are going to install the required modules now.
     echo Please restart the script after the modules are installed.
+    timeout /t 5
+    echo.
     npm install
 )
 
 :loop
 node modupdater.js
 
+echo.
 choice /c RQ /n /m "Program finished, press Q to quit or R to rerun. "
 if errorlevel 2 (
     echo bye!

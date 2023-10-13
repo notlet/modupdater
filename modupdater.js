@@ -8,7 +8,9 @@ const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
 const progress = require('progress');
+const figlet = require("figlet");
 
+const { version } = require('./package.json');
 const serverurl = "https://mods.notlet.dev";
 
 const download = (url, filename, silent) => new Promise(async (res, rej) => {
@@ -53,12 +55,12 @@ const error = e => {
 
     // verify that we are in proper directory by checking some files
     const checks = [
-        fssync.existsSync('../options.txt'),
         fssync.existsSync('../saves'),
+        fssync.existsSync('../screenshots'),
         fssync.existsSync('../resourcepacks')
     ];
     // fail the program if any of the checks fail
-    if (checks.includes(false) && !process.argv.includes('--debug')) throw new Error(`Directory checks failed! You might have to launch minecraft at least once before running this, or you have unzipped this into the wrong folder.`);
+    if (checks.includes(false) && !process.argv.includes('--debug') && !fssync.existsSync('nodircheck.txt')) throw new Error(`Directory checks failed! You might have to launch minecraft at least once before running this, or you have unzipped this into the wrong directory.\nIf you believe this is an error, you can add a blank file called ${chalk.bold("nodircheck.txt")} in this directory to skip the checks.`);
 
     // check for needed files and folders and create if doesnt exist
     if (!fssync.existsSync('../mods')) await fs.mkdir('../mods');
@@ -67,8 +69,15 @@ const error = e => {
     if (fssync.existsSync('temp')) await fs.rm('temp', { recursive: true });
     await fs.mkdir('temp');
 
-    console.log(`                                                                                                                              \n    mmm   m   m   mmm    mmm   m   m          mmm   mmmmm  mmmm  \n   #   "  #   #  #   "  #   "  "m m"         #   "  # # #  #" "# \n    """m  #   #   """m   """m   #m#           """m  # # #  #   # \n   "mmm"  "mm"#  "mmm"  "mmm"   "#           "mmm"  # # #  ##m#" \n                                m"                         #     \n                               ""                          "     `)
-    
+    console.log(figlet.textSync('sussy smp', { font: 'Larry 3D' }))
+
+    // check github api for any new versions
+    const githubResponse = await axios.get('https://api.github.com/repos/notlet/modupdater/releases/latest').catch(() => console.log(chalk.gray(`Failed to check for new updates.`)));
+    if (githubResponse?.data) {
+        const githubVersion = githubResponse.data.tag_name;
+        if (githubVersion != version) console.log(`\n${chalk.white.bold('━'.repeat(40))}\n${chalk.blueBright(s.info)} New version available! (${chalk.bold(version)} → ${chalk.bold(githubVersion)})\nPlease download it from ${chalk.blue('https://github.com/notlet/modupdater/releases/tag/' + encodeURIComponent(githubVersion))}\n${chalk.white.bold('━'.repeat(40))}\n`);
+    }
+
     // get mod lists
     const modlistspinner = ora('Fetching mod lists...').start();
     const moddir = (await fs.readdir('../mods')).filter(f => f.endsWith('.jar'));
