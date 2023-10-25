@@ -82,7 +82,7 @@ const error = e => {
     const modlistspinner = ora('Fetching mod lists...').start();
     const moddir = (await fs.readdir('../mods')).filter(f => f.endsWith('.jar'));
     const modlisttimeout = setTimeout(() => modlistspinner.text = 'Fetching mod lists... (this is taking a bit long, is the server down?)', 10000);
-    const modlistreq = await axios.get(`${serverurl}/list`).catch(e => {
+    const modlistreq = await axios.get(`${serverurl}/mods.json`).catch(e => {
         modlistspinner.fail('Failed to fetch mod lists.');
         throw new Error(`Failed while fetching mod lists, server might be down! (${e.message})`);
     });
@@ -134,7 +134,7 @@ const error = e => {
             // download missing mods if needed
             if (missingmods.length > 0) {
                 // download the mod files
-                for (const mod of missingmods) await download(`${serverurl}/file/${mod}`, mod);
+                for (const mod of missingmods) await download(`${serverurl}/files/${mod}`, mod);
                 console.log(`${chalk.green(s.success)} Downloaded mod files.\n`);
 
                 const modspinner = ora('Starting mods verification...').start();
@@ -174,7 +174,7 @@ const error = e => {
         await fs.rm('../kubejs', {recursive: true, force: true});
 
         kjsspinner.text = 'Downloading new scripts...';
-        await download(`${serverurl}/file/kubejs.zip`, 'kubejs.zip', true);
+        await download(`${serverurl}/files/kubejs.zip`, 'kubejs.zip', true);
         kjsspinner.text = 'Downloading scripts complete.';
 
         kjsspinner.text = 'Reading archive...';
