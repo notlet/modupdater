@@ -10,6 +10,11 @@ const crypto = require('crypto');
 const progress = require('progress');
 
 const { version } = require('./package.json');
+if (process.argv.includes('--version')) {
+    console.log(version);
+    process.exit(0);
+}
+
 const serverurl = "https://mods.notlet.dev";
 
 const download = (url, filename, silent) => new Promise(async (res, rej) => {
