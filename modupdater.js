@@ -86,7 +86,7 @@ const error = e => {
     // check github api for any new versions
     const githubResponse = await axios.get('https://api.github.com/repos/notlet/modupdater/releases/latest').catch(() => console.log(chalk.gray(`Failed to check for new updates.`)));
     if (githubResponse?.data) {
-        const githubVersion = githubResponse.data.tag_name;
+        const githubVersion = githubResponse.data.tag_name?.split('-').slice(0, -1).join('-');
         if (githubVersion != version) console.log(`\n${chalk.white.bold('━'.repeat(40))}\n${chalk.blueBright(s.info)} New version available! (${chalk.bold(version)} → ${chalk.bold(githubVersion)})\nPlease download it from ${chalk.blue('https://github.com/notlet/modupdater/releases/tag/' + encodeURIComponent(githubVersion))}\n${chalk.white.bold('━'.repeat(40))}\n`);
     }
 
