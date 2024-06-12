@@ -14,26 +14,14 @@ jobs:
         run: bun run build-all
 
       - name: get version
-        run: echo "::set-output name=version::$(./out/modupdater --version)-$(git rev-parse --short HEAD)"
+        run: echo "version=$(./out/modupdater --version)-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         id: version
 
       - name: release
-        uses: actions/create-release@v1
-        id: create_release
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          release_name: ${{ steps.version.outputs.version }}
-          body: ${{ github.event.head_commit.message }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-      
-      - name: upload artifacts
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            out/modupdater-linux
-            out/modupdater-windows.exe
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+          files: out/*
+          draft: false
+          prerelease: false
+          tag_name: ${{ steps.version.outputs.version }}
+          generate_release_notes: true
