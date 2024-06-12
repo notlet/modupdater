@@ -14,7 +14,7 @@ jobs:
         run: bun run build-all
 
       - name: get version
-        run: echo "version=$(./out/modupdater --version)-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        run: echo "version=$(./out/modupdater-linux --version)-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         id: version
 
       - name: release
@@ -25,3 +25,4 @@ jobs:
           prerelease: false
           tag_name: ${{ steps.version.outputs.version }}
           generate_release_notes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
