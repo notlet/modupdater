@@ -1,24 +1,28 @@
 {
   "name": "modupdater",
-  "version": "v0.5.2",
-  "description": "auto mod updater for sussy smp",
-  "main": "modupdater.js",
-  "author": "let_game",
-  "license": "MIT",
-  "private": false,
-  "homepage": "https://github.com/notlet/modupdater#readme",
+  "version": "v0.6.0",
+  "author": "notlet",
   "repository": "github:notlet/modupdater",
+  "main": "modupdater.js",
   "dependencies": {
-    "adm-zip": "^0.5.10",
-    "axios": "^1.4.0",
-    "chalk": "^4",
-    "enquirer": "^2.3.6",
-    "figlet": "^1.6.0",
+    "adm-zip": "^0.5.14",
+    "axios": "^1.7.2",
+    "chalk": "^4.1.2",
+    "enquirer": "^2.4.1",
     "fs": "^0.0.1-security",
     "http": "^0.0.1-security",
     "https": "^1.0.0",
     "log-symbols": "^5.1.0",
     "ora": "^6.3.1",
     "progress": "^2.0.3"
+  },
+  "description": "auto mod updater for sussy smp",
+  "homepage": "https://github.com/notlet/modupdater#readme",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "build-linux": "bun build modupdater.js --target=bun-linux-x64 --compile --minify --sourcemap --outfile=out/modupdater-linux",
+    "build-windows": "bun build modupdater.js --target=bun-windows-x64 --compile --minify --sourcemap --outfile=out/modupdater-windows.exe",
+    "build-all": "bun run build-linux && bun run build-windows"
   }
 }

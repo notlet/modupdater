@@ -1,8 +1,7 @@
 node_modules
-node
-*.zip
-yarn.lock
-package-lock.json
+out
 blacklist.json
 temp
+mods
+kubejs
 nodircheck.txt
