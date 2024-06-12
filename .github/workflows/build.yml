@@ -1,0 +1,28 @@
+name: build-modupdater
+on: push
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+
+      - name: install dependencies
+        run: bun install
+
+      - name: build binaries
+        run: bun run build-all
+
+      - name: get version
+        run: echo "version=$(./out/modupdater-linux --version)-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        id: version
+
+      - name: release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: out/*
+          draft: false
+          prerelease: false
+          tag_name: ${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
