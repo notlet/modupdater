@@ -1,6 +1,6 @@
 {
   "name": "modupdater",
-  "version": "v0.6.0.1",
+  "version": "v0.6.1",
   "author": "notlet",
   "repository": "github:notlet/modupdater",
   "main": "modupdater.js",
