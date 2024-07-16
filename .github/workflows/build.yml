@@ -25,4 +25,5 @@ jobs:
           prerelease: false
           tag_name: ${{ steps.version.outputs.version }}
           generate_release_notes: true
+          body: ${{ github.event.head_commit.message }}
           token: ${{ secrets.GITHUB_TOKEN }}

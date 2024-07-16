@@ -47,6 +47,8 @@ const download = (url, filename, silent) => new Promise(async (res, rej) => {
     writer.on('error', rej);
 });
 
+const getHash = async file => crypto.createHash('sha256').update(await fs.readFile(file)).digest('hex');
+
 const exitOnKey = () => {
     console.log('\nPress any key to exit.');
     process.stdin.setRawMode(true);
@@ -102,7 +104,7 @@ const error = e => {
 
     const modlist = modlistreq.data;
     if (typeof modlist !== 'object' || typeof modlist.length !== 'number') {
-        modlistspinner.fail("Failed to fetch mod list.");
+        modlistspinner.fail("Failed to fetch mod lists.");
         throw new Error("Something went wrong while getting mod lists, data may be malformed.");
     }
 
@@ -132,20 +134,38 @@ const error = e => {
             try {
                 console.log(chalk.bold('\nUpdating mods...'));
 
-                console.log(`\n${chalk.green.bold('+')} Need to download ${chalk.bold(missingmods.length + ' mods')}.\n${chalk.red.bold('-')} Need to delete ${chalk.bold(unneededmods.length + ' mods')}.${blacklist.length > 0 ? chalk.gray(' (skipping ' + blacklist.length + ' due to blacklist)') : ''}\n`);
+                const modstoverify = moddir.filter(m => !blacklist.includes(m) && !unneededmods.includes(m));
+                const verifyspinner = ora(`Verifying ${modstoverify.length} mods...`).start();
+                verifyspinner.prefixText = '\n';
+
+                for (const mod of modstoverify) {
+                    verifyspinner.text = `Checking ${chalk.italic(mod)}`;
+                    const hashSum = await getHash(`./mods/${mod}`);
+                    if (modlist.find(m => m.name === mod)?.checksum !== hashSum) {
+                        verifyspinner.prefixText += ` ${chalk.yellow(s.warning)} Failed to verify ${chalk.bold.italic(mod)}, it will be redownloaded! (hash mismatch)\n`;
+                        missingmods.push(mod);
+                        unneededmods.push(mod);
+                    }
+                }
+                verifyspinner.succeed('Successfully verified mods.');
+
+                console.log(`\n${chalk.green.bold('+')} Need to download ${chalk.bold(missingmods.length + ' mod' + (missingmods.length == 1 ? '' : 's'))}.\n${chalk.red.bold('-')} Need to delete ${chalk.bold(unneededmods.length + ' mod' + (unneededmods.length == 1 ? '' : 's'))}.${blacklist.length > 0 ? chalk.gray(' (skipping ' + blacklist.length + ' due to blacklist)') : ''}\n`);
+
+                if ((unneededmods.length > 0 || missingmods.length > 0) && !(await new enquirer.Confirm({ name: 'updatemods', message: 'Proceed?' }).run())) return error(new Error('Aborted.'));
 
                 if (unneededmods.length > 0) {
+                    console.log('');
                     const delmodsspinner = ora(`\nDeleting ${unneededmods.length} mods...`).start();
                     for (const mod of unneededmods) {
                         delmodsspinner.text = `Deleting ${chalk.italic(mod)}`;
                         await fs.unlink('./mods/' + mod);
                     }
                     delmodsspinner.succeed('Successfully deleted unneeded mods.');
-                    console.log('');
                 }
 
                 // download missing mods if needed
                 if (missingmods.length > 0) {
+                    console.log('');
                     // download the mod files
                     for (const mod of missingmods) await download(`${serverurl}/files/${mod}`, mod);
                     console.log(`${chalk.green(s.success)} Downloaded mod files.\n`);
@@ -153,18 +173,16 @@ const error = e => {
                     const modspinner = ora('Starting mods verification...').start();
                     // verify SHA256 hash and move to mods folder
                     for (const mod of missingmods) {
-                        modspinner.text = `Verifying ${chalk.bold(mod)} SHA256 checksum...`;
-                        const modbuffer = await fs.readFile(`temp/${mod}`);
-
-                        const hashSum = crypto.createHash('sha256').update(modbuffer).digest('hex');
+                        modspinner.text = `Verifying ${chalk.bold.italic(mod)} SHA256 checksum...`;
+                        const hashSum = await getHash(`temp/${mod}`);
                         if (modlist.find(m => m.name === mod)?.checksum !== hashSum) {
-                            modspinner.fail(`Failed to verify ${chalk.bold(mod)}.`)
-                            throw new Error(`Failed to verify ${chalk.bold(mod)}! (hash mismatch)\nThe file might be corrupted or someone may be intercepting your downloads.`);
+                            modspinner.fail(`Failed to verify ${chalk.bold.italic(mod)}.`)
+                            throw new Error(`Failed to verify ${chalk.bold.italic(mod)}! (hash mismatch)\nThe file might be corrupted or someone may be intercepting your downloads.`);
                         }
 
                         modspinner.text = `Successfully verified, moving to ${chalk.bold('mods')} folder...`;
                         await fs.rename(`temp/${mod}`, `./mods/${mod}`);
-                        modspinner.text = `Done with ${chalk.bold(mod)}.`;
+                        modspinner.text = `Done with ${chalk.bold.italic(mod)}.`;
                     }
 
                     modspinner.succeed('All mods verified and moved to mods folder.');
