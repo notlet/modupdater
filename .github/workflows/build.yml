@@ -1,5 +1,16 @@
 name: build-modupdater
-on: push
+on: 
+  workflow_dispatch:
+    inputs:
+      fancyname:
+        description: 'Fancy Release Name'
+        required: false
+        type: string
+      commit:
+        description: 'Include Commit in Name'
+        default: true
+        type: boolean
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -14,7 +25,12 @@ jobs:
         run: bun run build-all
 
       - name: get version
-        run: echo "version=$(./out/modupdater-linux --version)-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        run: |
+          echo "tagname=$(./out/modupdater-linux --version)-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "releasename=$(./out/modupdater-linux --version)$(if [ ${{inputs.commit}} = true ]; then echo "-$(git rev-parse --short HEAD)"; fi)$(if [ ${{inputs.fancyname}} ]; then echo " ${{inputs.fancyname}}"; fi)" >> $GITHUB_OUTPUT
+        env: 
+          FANCYNAME: ${{ inputs.fancyname }}
+          COMMIT: ${{ inputs.commit }}
         id: version
 
       - name: release
@@ -23,7 +39,7 @@ jobs:
           files: out/*
           draft: false
           prerelease: false
-          tag_name: ${{ steps.version.outputs.version }}
+          tag_name: ${{ steps.version.outputs.tagname }}
+          name: ${{ steps.version.outputs.releasename }}
           generate_release_notes: true
-          body: ${{ github.event.head_commit.message }}
           token: ${{ secrets.GITHUB_TOKEN }}
